@@ -2,7 +2,11 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0f1115" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <title>Free Gemini — مساعدك الذكي</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -13,12 +17,15 @@
     --user-bg:#2b2350; --assistant-bg:#1e222c; --danger:#ff6b6b; --success:#3ddc97;
     --radius:14px;
   }
-  *{box-sizing:border-box}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   html,body{height:100%}
   body{
     margin:0; font-family:'Tajawal','IBM Plex Sans Arabic','Segoe UI',Tahoma,sans-serif;
-    background:var(--bg); color:var(--text); overflow:hidden;
+    background:var(--bg); color:var(--text); overflow:hidden; overflow-x:hidden;
+    overscroll-behavior:none;
   }
+  button, .chip, .conv-item{touch-action:manipulation}
+  .backdrop{display:none}
   .app{display:flex; height:100dvh; width:100%}
 
   /* ---------- Sidebar ---------- */
@@ -148,17 +155,78 @@
   }
   #toast.show{opacity:1; transform:translateX(50%) translateY(0)}
 
+  /* ---------- الجوال / أندرويد (شاشات صغيرة) ---------- */
   @media (max-width:860px){
-    aside{position:fixed; inset-inline-start:0; top:0; bottom:0; z-index:50; transform:translateX(100%); transition:.25s; box-shadow:0 0 40px rgba(0,0,0,.5)}
-    [dir="rtl"] aside{transform:translateX(100%)}
+    aside{
+      position:fixed; inset-inline-start:0; top:0; bottom:0; z-index:60;
+      width:min(320px,88vw); min-width:0;
+      transform:translateX(105%); transition:transform .28s ease;
+      box-shadow:0 0 40px rgba(0,0,0,.55);
+      padding:14px; padding-bottom:calc(14px + env(safe-area-inset-bottom));
+    }
     aside.open{transform:translateX(0)}
-    #menuBtn{display:inline-block}
-    .msg{max-width:94%}
-    header h2{max-width:30vw}
+    .backdrop{
+      display:block; position:fixed; inset:0; z-index:55;
+      background:rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:opacity .25s;
+    }
+    .backdrop.show{opacity:1; pointer-events:auto}
+    #menuBtn{display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; padding:8px}
+
+    header{padding:10px 12px; gap:6px; flex-wrap:nowrap}
+    header h2{font-size:15px; max-width:34vw}
+    header .meta{display:none}
+    header .btn{min-width:40px; min-height:40px; padding:8px 10px; font-size:16px}
+    #saveStatus{font-size:11px}
+
+    #messages{padding:14px 12px; gap:12px}
+    .msg{max-width:93%}
+    .bubble{padding:11px 13px; font-size:14.5px; line-height:1.8}
+    .att-img{max-width:170px; max-height:170px}
+    .welcome{padding:12px}
+    .welcome .star{font-size:36px}
+    .welcome h1{font-size:24px}
+    .welcome p{font-size:14px}
+    .chip{padding:9px 14px; font-size:13.5px}
+
+    #composer{padding:10px 12px calc(8px + env(safe-area-inset-bottom))}
+    .composer-row{gap:8px}
+    textarea{font-size:16px; padding:11px 12px} /* 16px يمنع التكبير التلقائي في متصفحات الجوال */
+    #attachBtn{min-width:44px; min-height:44px; padding:10px}
+    #sendBtn{min-height:44px; padding:11px 16px; font-size:14.5px}
+    #stopBtn{min-height:44px; padding:11px 14px}
+    .hint{font-size:10.5px; line-height:1.6}
+    footer{font-size:10.5px; padding:6px 10px calc(10px + env(safe-area-inset-bottom))}
+
+    .search, .field input{font-size:16px} /* منع تكبير الحقول عند التركيز */
+    .icon-btn{min-width:36px; min-height:36px; font-size:16px}
+    .conv-item{padding:12px}
+    .btn{min-height:42px}
+    .pending img{width:56px; height:56px}
+    #toast{bottom:calc(18px + env(safe-area-inset-bottom)); font-size:13.5px}
+  }
+
+  /* هواتف صغيرة جداً */
+  @media (max-width:380px){
+    .brand{font-size:20px}
+    header h2{max-width:28vw; font-size:14px}
+    #saveStatus{display:none}
+    #sendBtn{padding:11px 12px}
+    .msg{max-width:96%}
+    .welcome h1{font-size:22px}
+  }
+
+  /* أجهزة أفقية قصيرة (وضع أفقي على الهاتف) */
+  @media (max-height:500px) and (max-width:900px){
+    .welcome .star{font-size:26px}
+    .welcome h1{font-size:20px; margin:4px 0}
+    .welcome p{font-size:13px; margin:3px 0}
+    #messages{padding:10px 12px}
+    textarea{max-height:90px}
   }
 </style>
 </head>
 <body>
+<div class="backdrop" id="backdrop"></div>
 <div class="app">
 
   <!-- ======= الشريط الجانبي: المحادثات + الإعدادات ======= -->
@@ -169,7 +237,7 @@
 
     <button class="btn btn-primary btn-block" id="newChatBtn">＋ محادثة جديدة</button>
 
-    <input class="search" id="searchInput" type="search" placeholder="🔍 بحث في المحادثات..." />
+    <input class="search" id="searchInput" type="search" enterkeyhint="search" placeholder="🔍 بحث في المحادثات..." />
 
     <div class="conv-list" id="convList"></div>
 
@@ -354,11 +422,15 @@ function createConversation(switchTo = true) {
   $("inputBox").focus();
   return conv;
 }
+function closeSidebar() {
+  $("sidebar").classList.remove("open");
+  $("backdrop").classList.remove("show");
+}
 function switchTo(id) {
   if (!conversations.find((c) => c.id === id)) return;
   activeId = id; pendingAttachments = [];
   saveAll(); renderAll();
-  $("sidebar").classList.remove("open");
+  closeSidebar();
 }
 function deleteConversation(id) {
   const conv = conversations.find((c) => c.id === id);
@@ -719,7 +791,12 @@ $("importFile").addEventListener("change", (e) => { if (e.target.files[0]) impor
 $("renameBtn").addEventListener("click", () => renameConversation(activeId));
 $("deleteOneBtn").addEventListener("click", () => deleteConversation(activeId));
 $("testBtn").addEventListener("click", testConnection);
-$("menuBtn").addEventListener("click", () => $("sidebar").classList.toggle("open"));
+$("menuBtn").addEventListener("click", () => {
+  const open = $("sidebar").classList.toggle("open");
+  $("backdrop").classList.toggle("show", open);
+});
+$("backdrop").addEventListener("click", closeSidebar);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSidebar(); });
 $("sendBtn").addEventListener("click", sendMessage);
 $("stopBtn").addEventListener("click", () => abortCtrl && abortCtrl.abort());
 $("attachBtn").addEventListener("click", () => $("fileInput").click());
