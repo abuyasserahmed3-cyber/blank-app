@@ -1,19 +1,30 @@
-# 🎈 Blank app template
+# ✦ Free Gemini — مساعدك الذكي
 
-A simple Streamlit app template for you to modify!
+واجهة ويب عربية (RTL) للمحادثة مع Gemini وتحليل الصور والملفات، في ملف واحد `index.html`
+بدون أي اعتماديات أو خطوات بناء.
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://blank-app-template.streamlit.app/)
+## التشغيل
 
-### How to run it on your own machine
+افتح `index.html` مباشرة في المتصفح، أو شغّل خادماً محلياً:
 
-1. Install the requirements
+```bash
+python3 -m http.server 8000
+# ثم افتح http://localhost:8000/index.html
+```
 
-   ```
-   $ pip install -r requirements.txt
-   ```
+## الميزات
 
-2. Run the app
+- **حفظ تلقائي في المتصفح (localStorage):** تُحفظ المحادثات والإعدادات والصور المرفقة
+  فور كل رسالة، وتبقى موجودة بعد تحديث الصفحة أو إغلاقها وإعادة فتحها.
+- **محادثات متعددة:** إنشاء محادثة جديدة، التبديل بينها من الشريط الجانبي، إعادة التسمية،
+  الحذف، البحث، «إزالة الكل»، وعناوين تلقائية من أول رسالة.
+- **تصدير/استيراد:** تنزيل كل المحادثات أو محادثة واحدة بصيغة JSON واستيرادها لاحقاً.
+- **إعدادات محفوظة:** عنوان API المحلي، النموذج (الافتراضي `gemini-3.8-flash`)،
+  مفتاح API (اختياري)، مع زر «اختبار الاتصال».
+- **وضعان تلقائياً:** Gemini الرسمي (`generativelanguage.googleapis.com`) أو خادم محلي
+  متوافق مع OpenAI (مثال: `http://localhost:11434/v1`) — يُكتشف النوع من العنوان.
+- **مرفقات:** صور (تُضغط محلياً قبل الإرسال والحفظ)، ملفات نصية وPDF،
+  بالسحب والإفلات أو اللصق، وتُعالج محلياً ثم تُرسل إلى العنوان المحدد فقط.
+- Enter للإرسال · Shift + Enter لسطر جديد · زر إيقاف الطلب الجاري · نسخ/حذف أي رسالة.
 
-   ```
-   $ streamlit run streamlit_app.py
-   ```
+> لا تُرسل بياناتك إلى أي خادم آخر غير العنوان المحدد في الإعدادات.

@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Free Gemini — مساعدك الذكي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e222c; --border:#2a2f3a;
+    --text:#e8eaf0; --muted:#9aa3b2; --accent:#7c6cff; --accent2:#4cc2ff;
+    --user-bg:#2b2350; --assistant-bg:#1e222c; --danger:#ff6b6b; --success:#3ddc97;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:'Tajawal','IBM Plex Sans Arabic','Segoe UI',Tahoma,sans-serif;
+    background:var(--bg); color:var(--text); overflow:hidden;
+  }
+  .app{display:flex; height:100dvh; width:100%}
+
+  /* ---------- Sidebar ---------- */
+  aside{
+    width:320px; min-width:320px; background:var(--panel);
+    border-inline-end:1px solid var(--border);
+    display:flex; flex-direction:column; padding:16px; gap:12px; overflow-y:auto;
+  }
+  .brand{font-size:22px; font-weight:800; line-height:1.2}
+  .brand small{display:block; font-size:12.5px; font-weight:500; color:var(--muted); margin-top:4px}
+  .btn{
+    border:1px solid var(--border); background:var(--panel2); color:var(--text);
+    border-radius:10px; padding:9px 14px; font-family:inherit; font-size:14px;
+    cursor:pointer; transition:.15s; white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--accent); transform:translateY(-1px)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; color:#fff; font-weight:700}
+  .btn-danger:hover{border-color:var(--danger); color:var(--danger)}
+  .btn-block{width:100%}
+  .search{
+    width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text);
+    border-radius:10px; padding:9px 12px; font-family:inherit; font-size:14px; outline:none;
+  }
+  .search:focus{border-color:var(--accent)}
+  .conv-list{display:flex; flex-direction:column; gap:6px; flex:1; min-height:80px}
+  .conv-item{
+    border:1px solid var(--border); background:var(--panel2); border-radius:12px;
+    padding:10px 12px; cursor:pointer; transition:.15s;
+  }
+  .conv-item:hover{border-color:var(--accent)}
+  .conv-item.active{border-color:var(--accent); background:linear-gradient(135deg,rgba(124,108,255,.18),rgba(76,194,255,.10))}
+  .conv-title{font-weight:700; font-size:14.5px; display:flex; justify-content:space-between; gap:8px}
+  .conv-title .acts{display:flex; gap:4px; flex-shrink:0}
+  .icon-btn{background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; padding:2px 4px; border-radius:6px}
+  .icon-btn:hover{color:var(--text); background:rgba(255,255,255,.08)}
+  .icon-btn.danger:hover{color:var(--danger)}
+  .conv-preview{color:var(--muted); font-size:12.5px; margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .conv-meta{color:var(--muted); font-size:11.5px; margin-top:5px; display:flex; justify-content:space-between}
+  .empty-list{color:var(--muted); font-size:13px; text-align:center; padding:18px 8px; border:1px dashed var(--border); border-radius:12px}
+  .side-actions{display:flex; gap:8px; flex-wrap:wrap}
+  .side-actions .btn{flex:1; font-size:13px; padding:8px 6px}
+  details.settings{border:1px solid var(--border); border-radius:12px; background:var(--panel2); padding:10px 12px}
+  details.settings summary{cursor:pointer; font-weight:700; font-size:14.5px}
+  .field{margin-top:12px}
+  .field label{display:block; font-size:13px; font-weight:600; margin-bottom:5px; color:var(--muted)}
+  .field input{
+    width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text);
+    border-radius:9px; padding:9px 11px; font-family:inherit; font-size:13.5px; outline:none; direction:ltr; text-align:left;
+  }
+  .field input:focus{border-color:var(--accent)}
+  .field .help{font-size:11.5px; color:var(--muted); margin-top:5px; line-height:1.6; direction:rtl; text-align:right}
+  .test-row{display:flex; gap:8px; align-items:center; margin-top:12px}
+  .test-status{font-size:12.5px; color:var(--muted)}
+  .test-status.ok{color:var(--success)} .test-status.bad{color:var(--danger)}
+  .save-note{font-size:12px; color:var(--muted); line-height:1.7; border-top:1px solid var(--border); padding-top:10px}
+  .storage-info{font-size:11.5px; color:var(--muted); margin-top:6px}
+
+  /* ---------- Main ---------- */
+  main{flex:1; display:flex; flex-direction:column; min-width:0}
+  header{
+    display:flex; align-items:center; gap:10px; padding:12px 18px;
+    border-bottom:1px solid var(--border); background:var(--panel);
+  }
+  header h2{margin:0; font-size:17px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:38vw}
+  header .meta{font-size:12px; color:var(--muted)}
+  header .spacer{flex:1}
+  #saveStatus{font-size:12px; color:var(--success); white-space:nowrap}
+  #saveStatus.saving{color:var(--muted)}
+  #menuBtn{display:none}
+  #messages{flex:1; overflow-y:auto; padding:22px 18px; display:flex; flex-direction:column; gap:16px}
+  .welcome{margin:auto; text-align:center; max-width:560px; padding:20px}
+  .welcome .star{font-size:44px; background:linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .welcome h1{font-size:30px; margin:10px 0 6px}
+  .welcome p{color:var(--muted); line-height:1.9; margin:6px 0}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:16px}
+  .chip{border:1px solid var(--border); background:var(--panel2); color:var(--text); border-radius:999px; padding:7px 14px; font-size:13px; cursor:pointer; font-family:inherit}
+  .chip:hover{border-color:var(--accent)}
+  .msg{max-width:82%; display:flex; flex-direction:column; gap:6px}
+  .msg.user{align-self:flex-start}
+  .msg.assistant{align-self:flex-end}
+  .msg-head{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted)}
+  .msg-head .avatar{width:24px; height:24px; border-radius:50%; display:grid; place-items:center; font-size:13px; background:var(--panel2); border:1px solid var(--border)}
+  .msg-head .acts{margin-inline-start:auto; display:flex; gap:2px}
+  .bubble{
+    border-radius:var(--radius); padding:13px 16px; line-height:1.85; font-size:15px;
+    border:1px solid var(--border); word-break:break-word; overflow-wrap:anywhere;
+  }
+  .msg.user .bubble{background:var(--user-bg)}
+  .msg.assistant .bubble{background:var(--assistant-bg)}
+  .msg.error .bubble{border-color:var(--danger); color:#ffd7d7}
+  .bubble pre{background:#0b0d11; border:1px solid var(--border); border-radius:10px; padding:12px; overflow-x:auto; direction:ltr; text-align:left}
+  .bubble code{background:rgba(255,255,255,.08); padding:1px 6px; border-radius:6px; font-size:13px; direction:ltr; unicode-bidi:embed}
+  .bubble pre code{background:none; padding:0}
+  .bubble a{color:var(--accent2)}
+  .attachments{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px}
+  .att-img{max-width:220px; max-height:220px; border-radius:10px; border:1px solid var(--border); cursor:zoom-in}
+  .att-file{font-size:12.5px; background:rgba(255,255,255,.06); border:1px solid var(--border); border-radius:9px; padding:6px 10px}
+  .typing{display:inline-flex; gap:5px; padding:4px 2px}
+  .typing span{width:8px; height:8px; border-radius:50%; background:var(--muted); animation:blink 1.2s infinite}
+  .typing span:nth-child(2){animation-delay:.2s} .typing span:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+
+  /* ---------- Composer ---------- */
+  #composer{padding:12px 18px 6px; border-top:1px solid var(--border); background:var(--panel)}
+  #attachPreview{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px}
+  .pending{position:relative; border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--panel2)}
+  .pending img{width:64px; height:64px; object-fit:cover; display:block}
+  .pending .name{font-size:11px; padding:4px 8px; max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .pending .rm{position:absolute; top:3px; inset-inline-end:3px; background:rgba(0,0,0,.65); color:#fff; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer; font-size:12px; line-height:1}
+  .composer-row{display:flex; gap:9px; align-items:flex-end}
+  textarea{
+    flex:1; resize:none; background:var(--bg); border:1px solid var(--border); color:var(--text);
+    border-radius:12px; padding:12px 14px; font-family:inherit; font-size:15px; outline:none;
+    max-height:180px; line-height:1.7;
+  }
+  textarea:focus{border-color:var(--accent)}
+  #sendBtn{padding:12px 20px; font-size:15px}
+  #sendBtn:disabled{opacity:.5; cursor:not-allowed}
+  .hint{font-size:11.5px; color:var(--muted); margin-top:8px; text-align:center}
+  footer{font-size:11.5px; color:var(--muted); text-align:center; padding:8px 12px 12px}
+
+  #toast{
+    position:fixed; bottom:22px; inset-inline-start:50%; transform:translateX(50%) translateY(20px);
+    background:#222836; border:1px solid var(--border); color:var(--text);
+    padding:11px 18px; border-radius:12px; font-size:14px; opacity:0; pointer-events:none;
+    transition:.25s; z-index:99; max-width:90vw; text-align:center;
+  }
+  #toast.show{opacity:1; transform:translateX(50%) translateY(0)}
+
+  @media (max-width:860px){
+    aside{position:fixed; inset-inline-start:0; top:0; bottom:0; z-index:50; transform:translateX(100%); transition:.25s; box-shadow:0 0 40px rgba(0,0,0,.5)}
+    [dir="rtl"] aside{transform:translateX(100%)}
+    aside.open{transform:translateX(0)}
+    #menuBtn{display:inline-block}
+    .msg{max-width:94%}
+    header h2{max-width:30vw}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ======= الشريط الجانبي: المحادثات + الإعدادات ======= -->
+  <aside id="sidebar">
+    <div class="brand">✦ Free Gemini
+      <small>مساعدك الذكي — محادثة وتحليل صور</small>
+    </div>
+
+    <button class="btn btn-primary btn-block" id="newChatBtn">＋ محادثة جديدة</button>
+
+    <input class="search" id="searchInput" type="search" placeholder="🔍 بحث في المحادثات..." />
+
+    <div class="conv-list" id="convList"></div>
+
+    <div class="side-actions">
+      <button class="btn btn-danger" id="clearAllBtn" title="حذف جميع المحادثات">إزالة الكل ✕</button>
+      <button class="btn" id="exportAllBtn" title="تنزيل نسخة JSON من كل المحادثات">⬇ تصدير الكل</button>
+      <button class="btn" id="importBtn" title="استيراد محادثات من ملف JSON">⬆ استيراد</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden />
+    </div>
+
+    <details class="settings" id="settingsBox">
+      <summary>⚙️ الإعدادات</summary>
+
+      <div class="field">
+        <label for="endpointInput">عنوان API المحلي</label>
+        <input id="endpointInput" type="url" placeholder="http://localhost:11434/v1" autocomplete="off" spellcheck="false" />
+        <div class="help">
+          اتركه فارغاً لاستخدام Gemini الرسمي، أو أدخل عنوان خادمك المحلي المتوافق مع OpenAI
+          (مثال: <span dir="ltr">http://localhost:11434/v1</span>). يُكتشف النوع تلقائياً من العنوان.
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="modelInput">النموذج</label>
+        <input id="modelInput" type="text" list="modelList" placeholder="gemini-3.8-flash" autocomplete="off" spellcheck="false" />
+        <datalist id="modelList">
+          <option value="gemini-3.8-flash"></option>
+          <option value="gemini-2.5-flash"></option>
+          <option value="gemini-2.0-flash"></option>
+          <option value="gemini-1.5-flash"></option>
+          <option value="gemini-1.5-pro"></option>
+        </datalist>
+      </div>
+
+      <div class="field">
+        <label for="apiKeyInput">مفتاح API (اختياري)</label>
+        <input id="apiKeyInput" type="password" placeholder="••••••••" autocomplete="off" spellcheck="false" />
+        <div class="help">يُحفظ المفتاح في متصفحك فقط ولا يُرسل إلا إلى العنوان أعلاه.</div>
+      </div>
+
+      <div class="test-row">
+        <button class="btn" id="testBtn">اختبار الاتصال</button>
+        <span class="test-status" id="testStatus">لم يتم اختبار الاتصال بعد</span>
+      </div>
+
+      <div class="storage-info" id="storageInfo"></div>
+    </details>
+
+    <div class="save-note">
+      💾 تُحفظ المحادثات والإعدادات <b>تلقائياً</b> في هذا المتصفح (localStorage)
+      وتبقى موجودة بعد تحديث الصفحة أو إغلاقها وإعادة فتحها.
+    </div>
+  </aside>
+
+  <!-- ======= منطقة المحادثة ======= -->
+  <main>
+    <header>
+      <button class="btn" id="menuBtn" title="القائمة">☰</button>
+      <div>
+        <h2 id="chatTitle">محادثة جديدة</h2>
+        <span class="meta" id="chatMeta"></span>
+      </div>
+      <div class="spacer"></div>
+      <span id="saveStatus">✓ تم الحفظ</span>
+      <button class="btn" id="renameBtn" title="إعادة تسمية المحادثة">✎</button>
+      <button class="btn" id="exportOneBtn" title="تصدير هذه المحادثة">⬇</button>
+      <button class="btn btn-danger" id="deleteOneBtn" title="حذف هذه المحادثة">🗑</button>
+    </header>
+
+    <section id="messages"></section>
+
+    <div id="composer">
+      <div id="attachPreview"></div>
+      <div class="composer-row">
+        <button class="btn" id="attachBtn" title="إرفاق صورة أو ملف">📎</button>
+        <input type="file" id="fileInput" multiple
+               accept="image/*,.txt,.md,.json,.csv,.log,.js,.ts,.py,.html,.css,.pdf" hidden />
+        <textarea id="inputBox" rows="1" placeholder="اكتب سؤالك هنا..."></textarea>
+        <button class="btn btn-primary" id="sendBtn">＋ إرسال</button>
+        <button class="btn btn-danger" id="stopBtn" hidden>■ إيقاف</button>
+      </div>
+      <div class="hint">Enter للإرسال · Shift + Enter لسطر جديد · الصور والملفات تُعالج محلياً ثم تُرسل إلى Gemini</div>
+    </div>
+
+    <footer>Free Gemini Web UI · لا تُرسل بياناتك إلى أي خادم آخر غير العنوان المحدد أعلاه</footer>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* =========================================================
+   Free Gemini Web UI — حفظ تلقائي + محادثات متعددة
+   التخزين: localStorage (يبقى بعد تحديث الصفحة)
+   ========================================================= */
+
+const LS_CONVS    = "fg_conversations_v1";
+const LS_ACTIVE   = "fg_active_id_v1";
+const LS_SETTINGS = "fg_settings_v1";
+const GOOGLE_BASE = "https://generativelanguage.googleapis.com/v1beta";
+const DEFAULT_MODEL = "gemini-3.8-flash";
+
+/* ---------- أدوات مساعدة ---------- */
+const $ = (id) => document.getElementById(id);
+const uid = () => (crypto.randomUUID ? crypto.randomUUID()
+  : "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10));
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtDate = (ts) => new Date(ts).toLocaleString("ar", { dateStyle: "medium", timeStyle: "short" });
+const fmtTime = (ts) => new Date(ts).toLocaleTimeString("ar", { hour: "2-digit", minute: "2-digit" });
+
+let toastTimer = null;
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+}
+function setSaveStatus(text, saving = false) {
+  const el = $("saveStatus"); el.textContent = text;
+  el.classList.toggle("saving", saving);
+}
+
+/* ---------- الحالة ---------- */
+let conversations = [];          // [{id,title,createdAt,updatedAt,messages:[{id,role,content,attachments,createdAt,error?}]}]
+let activeId = null;
+let settings = { endpoint: "", model: DEFAULT_MODEL, apiKey: "" };
+let pendingAttachments = [];     // مرفقات لم تُرسل بعد
+let abortCtrl = null;            // لإيقاف الطلب الجاري
+let searchQuery = "";
+
+/* ---------- الحفظ / التحميل (localStorage) ---------- */
+function saveAll() {
+  setSaveStatus("جارٍ الحفظ...", true);
+  try {
+    localStorage.setItem(LS_CONVS, JSON.stringify(conversations));
+    if (activeId) localStorage.setItem(LS_ACTIVE, activeId);
+    setSaveStatus("✓ تم الحفظ — " + new Date().toLocaleTimeString("ar", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    updateStorageInfo();
+  } catch (e) {
+    setSaveStatus("⚠ تعذر الحفظ — مساحة التخزين ممتلئة", false);
+    toast("⚠ مساحة تخزين المتصفح ممتلئة. احذف بعض المحادثات أو صدّرها ثم أعد المحاولة.");
+    console.error(e);
+  }
+}
+function saveSettings() {
+  try { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); } catch (e) { console.error(e); }
+}
+function loadAll() {
+  try {
+    const raw = localStorage.getItem(LS_CONVS);
+    conversations = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(conversations)) conversations = [];
+  } catch (e) { conversations = []; console.error(e); }
+  try {
+    const s = localStorage.getItem(LS_SETTINGS);
+    if (s) settings = Object.assign(settings, JSON.parse(s));
+  } catch (e) { console.error(e); }
+  activeId = localStorage.getItem(LS_ACTIVE);
+  if (!conversations.find((c) => c.id === activeId)) {
+    activeId = conversations.length ? conversations[0].id : null;
+  }
+  if (!activeId) { createConversation(false); }   // محادثة أولى فارغة عند أول تشغيل
+}
+function updateStorageInfo() {
+  let bytes = 0;
+  try { bytes = (localStorage.getItem(LS_CONVS) || "").length * 2; } catch (e) {}
+  const kb = (bytes / 1024).toFixed(1);
+  const totalMsgs = conversations.reduce((n, c) => n + c.messages.length, 0);
+  $("storageInfo").textContent =
+    `المحادثات المحفوظة: ${conversations.length} · الرسائل: ${totalMsgs} · الحجم التقريبي: ${kb} KB`;
+}
+
+/* ---------- إدارة المحادثات ---------- */
+function getActive() { return conversations.find((c) => c.id === activeId) || null; }
+
+function createConversation(switchTo = true) {
+  const conv = { id: uid(), title: "محادثة جديدة", createdAt: Date.now(), updatedAt: Date.now(), messages: [] };
+  conversations.unshift(conv);
+  if (switchTo) activeId = conv.id;
+  else if (!activeId) activeId = conv.id;
+  saveAll(); renderAll();
+  $("inputBox").focus();
+  return conv;
+}
+function switchTo(id) {
+  if (!conversations.find((c) => c.id === id)) return;
+  activeId = id; pendingAttachments = [];
+  saveAll(); renderAll();
+  $("sidebar").classList.remove("open");
+}
+function deleteConversation(id) {
+  const conv = conversations.find((c) => c.id === id);
+  if (!conv) return;
+  if (!confirm(`حذف المحادثة «${conv.title}» نهائياً؟`)) return;
+  conversations = conversations.filter((c) => c.id !== id);
+  if (activeId === id) {
+    activeId = conversations.length ? conversations[0].id : null;
+    if (!activeId) createConversation(false);
+  }
+  saveAll(); renderAll(); toast("تم حذف المحادثة");
+}
+function clearAllConversations() {
+  if (!conversations.length) return toast("لا توجد محادثات لحذفها");
+  if (!confirm("سيتم حذف جميع المحادثات المحفوظة نهائياً. هل أنت متأكد؟")) return;
+  conversations = []; activeId = null;
+  createConversation(false);
+  toast("تمت إزالة جميع المحادثات");
+}
+function renameConversation(id) {
+  const conv = conversations.find((c) => c.id === id);
+  if (!conv) return;
+  const name = prompt("اسم المحادثة:", conv.title);
+  if (name && name.trim()) {
+    conv.title = name.trim().slice(0, 80);
+    conv.updatedAt = Date.now();
+    saveAll(); renderAll();
+  }
+}
+function autoTitle(conv) {
+  if (conv.title !== "محادثة جديدة") return;
+  const first = conv.messages.find((m) => m.role === "user" && m.content.trim());
+  if (first) conv.title = first.content.trim().replace(/\s+/g, " ").slice(0, 45) || conv.title;
+}
+
+/* ---------- عرض بسيط للنصوص (Markdown خفيف) ---------- */
+function renderMarkdown(text) {
+  let t = esc(text);
+  t = t.replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code.replace(/^\n+|\n+$/g, "")}</code></pre>`);
+  t = t.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+  t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  t = t.replace(/(^|\n)#{1,3}\s+(.+)/g, "$1<strong>$2</strong>");
+  t = t.replace(/(^|\n)[-*•]\s+(.+)/g, "$1• $2");
+  t = t.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  t = t.replace(/\n/g, "<br>");
+  return t;
+}
+
+/* ---------- العرض (Rendering) ---------- */
+function renderAll() { renderSidebar(); renderMessages(); renderHeader(); renderAttachPreview(); }
+
+function renderSidebar() {
+  const list = $("convList");
+  const q = searchQuery.trim();
+  const items = conversations.filter((c) => {
+    if (!q) return true;
+    return c.title.includes(q) || c.messages.some((m) => (m.content || "").includes(q));
+  });
+  if (!items.length) {
+    list.innerHTML = `<div class="empty-list">${q ? "لا توجد نتائج مطابقة" : "لا توجد محادثات بعد — ابدأ محادثة جديدة"}</div>`;
+    return;
+  }
+  list.innerHTML = items.map((c) => {
+    const last = [...c.messages].reverse().find((m) => m.content && m.content.trim());
+    const preview = last ? last.content.trim().replace(/\s+/g, " ").slice(0, 60) : "محادثة فارغة";
+    const active = c.id === activeId ? " active" : "";
+    return `<div class="conv-item${active}" data-id="${c.id}" title="فتح المحادثة">
+      <div class="conv-title"><span>${esc(c.title)}</span>
+        <span class="acts">
+          <button class="icon-btn" data-act="rename" data-id="${c.id}" title="إعادة تسمية">✎</button>
+          <button class="icon-btn danger" data-act="delete" data-id="${c.id}" title="حذف">🗑</button>
+        </span>
+      </div>
+      <div class="conv-preview">${esc(preview)}</div>
+      <div class="conv-meta"><span>${fmtDate(c.updatedAt)}</span><span>${c.messages.length} رسالة</span></div>
+    </div>`;
+  }).join("");
+}
+
+function renderHeader() {
+  const conv = getActive();
+  $("chatTitle").textContent = conv ? conv.title : "محادثة جديدة";
+  $("chatMeta").textContent = conv
+    ? `${conv.messages.length} رسالة · أُنشئت ${fmtDate(conv.createdAt)}` : "";
+}
+
+function renderMessages() {
+  const box = $("messages");
+  const conv = getActive();
+  if (!conv || !conv.messages.length) {
+    box.innerHTML = `<div class="welcome">
+      <div class="star">✧</div>
+      <h1>مرحبًا بك</h1>
+      <p>اكتب سؤالك أو أرفق صورة لتحليلها.</p>
+      <p>يمكنك تغيير النموذج وعنوان الخادم من الإعدادات أعلاه.</p>
+      <div class="chips">
+        <button class="chip" data-q="اشرح لي باختصار كيف يعمل الذكاء الاصطناعي">✦ اشرح لي الذكاء الاصطناعي</button>
+        <button class="chip" data-q="ساعدني في كتابة نص احترافي">✎ ساعدني في الكتابة</button>
+        <button class="chip" data-q="أرفقت صورة — حلّلها وصف لي ما فيها">🖼 حلّل صورة</button>
+        <button class="chip" data-q="اكتب لي خطة عمل منظمة لهذا الهدف: ">🗂 خطة عمل</button>
+      </div>
+    </div>`;
+    box.querySelectorAll(".chip").forEach((b) =>
+      b.addEventListener("click", () => { $("inputBox").value = b.dataset.q; $("inputBox").focus(); autoResize(); }));
+    return;
+  }
+  box.innerHTML = conv.messages.map((m) => {
+    const isUser = m.role === "user";
+    const atts = (m.attachments || []).map((a) => a.dataUrl
+      ? `<img class="att-img" src="${a.dataUrl}" alt="${esc(a.name)}" title="${esc(a.name)}" />`
+      : `<span class="att-file">📄 ${esc(a.name)}${a.size ? " (" + Math.round(a.size / 1024) + " KB)" : ""}</span>`).join("");
+    return `<div class="msg ${isUser ? "user" : "assistant"}${m.error ? " error" : ""}" data-mid="${m.id}">
+      <div class="msg-head">
+        <span class="avatar">${isUser ? "🧑" : "✦"}</span>
+        <b>${isUser ? "أنت" : "Gemini"}</b><span>${fmtTime(m.createdAt)}</span>
+        <span class="acts">
+          <button class="icon-btn" data-act="copy" data-id="${m.id}" title="نسخ">⧉</button>
+          <button class="icon-btn danger" data-act="delmsg" data-id="${m.id}" title="حذف الرسالة">✕</button>
+        </span>
+      </div>
+      <div class="bubble">${atts ? `<div class="attachments">${atts}</div>` : ""}${renderMarkdown(m.content || "")}</div>
+    </div>`;
+  }).join("");
+  box.scrollTop = box.scrollHeight;
+}
+
+function renderAttachPreview() {
+  const box = $("attachPreview");
+  box.innerHTML = pendingAttachments.map((a) => `
+    <div class="pending">
+      <button class="rm" data-id="${a.id}" title="إزالة">✕</button>
+      ${a.dataUrl && a.type.startsWith("image/")
+        ? `<img src="${a.dataUrl}" alt="${esc(a.name)}" />`
+        : `<div class="name">📄 ${esc(a.name)}</div>`}
+    </div>`).join("");
+  box.querySelectorAll(".rm").forEach((b) =>
+    b.addEventListener("click", () => {
+      pendingAttachments = pendingAttachments.filter((x) => x.id !== b.dataset.id);
+      renderAttachPreview();
+    }));
+}
+
+/* ---------- المرفقات: معالجة محلية + ضغط الصور ---------- */
+const TEXT_EXTS = [".txt", ".md", ".json", ".csv", ".log", ".js", ".ts", ".py", ".html", ".css"];
+function readAsDataURL(file) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); });
+}
+function readAsText(file) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsText(file); });
+}
+async function compressImage(file) {
+  const dataUrl = await readAsDataURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = dataUrl; });
+    const MAX = 1568;
+    const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+    if (scale === 1 && file.size < 400 * 1024) return dataUrl;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.width * scale); canvas.height = Math.round(img.height * scale);
+    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.85);
+  } catch (e) { return dataUrl; }
+}
+async function handleFiles(fileList) {
+  const files = [...fileList];
+  if (!files.length) return;
+  for (const file of files) {
+    const ext = "." + (file.name.split(".").pop() || "").toLowerCase();
+    const att = { id: uid(), name: file.name, type: file.type || "application/octet-stream", size: file.size, dataUrl: null, text: null };
+    if (file.type.startsWith("image/")) {
+      att.dataUrl = await compressImage(file);
+    } else if (file.type === "application/pdf") {
+      att.dataUrl = await readAsDataURL(file);
+    } else if (TEXT_EXTS.includes(ext) || file.type.startsWith("text/")) {
+      att.text = (await readAsText(file)).slice(0, 20000);
+    } else {
+      toast(`«${file.name}»: سيُرفق اسمه فقط (نوع غير مدعوم للإرسال)`);
+    }
+    pendingAttachments.push(att);
+  }
+  renderAttachPreview();
+  $("inputBox").focus();
+}
+
+/* ---------- الاتصال بالنموذج ---------- */
+function effectiveEndpoint() { return (settings.endpoint || "").trim() || GOOGLE_BASE; }
+function isNativeGemini(url) { return /generativelanguage\.googleapis\.com|googleapis\.com/i.test(url); }
+function attachmentText(a) {
+  return a.text ? `\n\n--- محتوى الملف: ${a.name} ---\n${a.text}` : "";
+}
+
+async function callModel(conv) {
+  const endpoint = effectiveEndpoint();
+  const model = (settings.model || DEFAULT_MODEL).trim() || DEFAULT_MODEL;
+  const key = (settings.apiKey || "").trim();
+  const history = conv.messages.filter((m) => !m.error);
+
+  if (isNativeGemini(endpoint)) {
+    /* --- وضع Gemini الأصلي --- */
+    const base = endpoint.replace(/\/$/, "");
+    let url = base.includes(":generateContent") ? base : `${base}/models/${model}:generateContent`;
+    if (key && !url.includes("key=")) url += (url.includes("?") ? "&" : "?") + "key=" + encodeURIComponent(key);
+    const contents = history.map((m) => {
+      const parts = [];
+      let text = m.content || "";
+      (m.attachments || []).forEach((a) => {
+        if (a.dataUrl && (a.type.startsWith("image/") || a.type === "application/pdf")) {
+          parts.push({ inline_data: { mime_type: a.type, data: a.dataUrl.split(",")[1] } });
+        } else { text += attachmentText(a); }
+      });
+      if (text.trim() || !parts.length) parts.unshift({ text: text || "حلّل الصورة المرفقة" });
+      return { role: m.role === "user" ? "user" : "model", parts };
+    });
+    const res = await fetch(url, {
+      method: "POST", signal: abortCtrl.signal,
+      headers: { "Content-Type": "application/json", ...(key ? { "x-goog-api-key": key } : {}) },
+      body: JSON.stringify({ contents }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.error?.message || `خطأ HTTP ${res.status}`);
+    const out = (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("").trim();
+    if (!out) throw new Error("لم يُرجع النموذج أي نص. تحقق من اسم النموذج أو مفتاح API.");
+    return out;
+  }
+
+  /* --- وضع الخادم المحلي المتوافق مع OpenAI --- */
+  const base = endpoint.replace(/\/$/, "");
+  const url = base.includes("/chat/completions") ? base : `${base}/chat/completions`;
+  const messages = history.map((m) => {
+    const parts = [];
+    let text = m.content || "";
+    (m.attachments || []).forEach((a) => {
+      if (a.dataUrl && a.type.startsWith("image/")) {
+        parts.push({ type: "image_url", image_url: { url: a.dataUrl } });
+      } else { text += attachmentText(a); }
+    });
+    if (parts.length) {
+      parts.unshift({ type: "text", text: text || "حلّل الصورة المرفقة" });
+      return { role: m.role, content: parts };
+    }
+    return { role: m.role, content: text };
+  });
+  const res = await fetch(url, {
+    method: "POST", signal: abortCtrl.signal,
+    headers: { "Content-Type": "application/json", ...(key ? { Authorization: "Bearer " + key } : {}) },
+    body: JSON.stringify({ model, messages }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error?.message || data?.message || `خطأ HTTP ${res.status}`);
+  const out = (data.choices?.[0]?.message?.content || "").trim();
+  if (!out) throw new Error("لم يُرجع الخادم أي نص. تحقق من اسم النموذج أو عنوان الخادم.");
+  return out;
+}
+
+async function testConnection() {
+  const status = $("testStatus");
+  status.className = "test-status"; status.textContent = "جارٍ اختبار الاتصال...";
+  $("testBtn").disabled = true;
+  const probe = { id: uid(), title: "محادثة جديدة", createdAt: Date.now(), updatedAt: Date.now(),
+    messages: [{ id: uid(), role: "user", content: "مرحبا، رد بكلمة واحدة: تم", attachments: [], createdAt: Date.now() }] };
+  abortCtrl = new AbortController();
+  const timer = setTimeout(() => abortCtrl.abort(), 20000);
+  try {
+    await callModel(probe);
+    status.className = "test-status ok"; status.textContent = "✓ الاتصال ناجح";
+    toast("✓ الاتصال ناجح");
+  } catch (e) {
+    status.className = "test-status bad";
+    status.textContent = "✗ فشل الاتصال: " + (e.name === "AbortError" ? "انتهت المهلة" : e.message);
+  } finally {
+    clearTimeout(timer); $("testBtn").disabled = false; abortCtrl = null;
+  }
+}
+
+/* ---------- إرسال الرسالة ---------- */
+async function sendMessage() {
+  const input = $("inputBox");
+  const text = input.value.trim();
+  if (!text && !pendingAttachments.length) return;
+  const conv = getActive();
+  if (!conv) return;
+
+  const userMsg = { id: uid(), role: "user", content: text, attachments: [...pendingAttachments], createdAt: Date.now() };
+  conv.messages.push(userMsg);
+  conv.updatedAt = Date.now();
+  autoTitle(conv);
+  pendingAttachments = [];
+  input.value = ""; autoResize();
+  saveAll(); renderAll();   // حفظ فوري قبل انتظار الرد — يبقى حتى لو حدّثت الصفحة أثناء الانتظار
+
+  // مؤشر الكتابة
+  const typingId = uid();
+  conv.messages.push({ id: typingId, role: "assistant", content: "…", attachments: [], createdAt: Date.now(), typing: true });
+  renderMessages();
+
+  $("sendBtn").disabled = true; $("stopBtn").hidden = false;
+  abortCtrl = new AbortController();
+  try {
+    const reply = await callModel(conv);
+    conv.messages = conv.messages.filter((m) => m.id !== typingId);
+    conv.messages.push({ id: uid(), role: "assistant", content: reply, attachments: [], createdAt: Date.now() });
+  } catch (e) {
+    conv.messages = conv.messages.filter((m) => m.id !== typingId);
+    const msg = e.name === "AbortError" ? "⏹ تم إيقاف الطلب من قبلك."
+      : "⚠ تعذّر الحصول على رد: " + e.message +
+        "\n\nتأكد من عنوان API والنموذج ومفتاح API في الإعدادات، وأن الخادم يعمل ويسمح بطلبات CORS من المتصفح.";
+    conv.messages.push({ id: uid(), role: "assistant", content: msg, attachments: [], createdAt: Date.now(), error: true });
+  } finally {
+    conv.updatedAt = Date.now();
+    saveAll(); renderAll();   // حفظ الرد فور وصوله
+    $("sendBtn").disabled = false; $("stopBtn").hidden = true; abortCtrl = null;
+    $("inputBox").focus();
+  }
+}
+
+/* ---------- تصدير / استيراد ---------- */
+function download(name, obj) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  URL.revokeObjectURL(a.href);
+}
+function exportAll() {
+  if (!conversations.length) return toast("لا توجد محادثات لتصديرها");
+  download(`free-gemini-conversations-${new Date().toISOString().slice(0, 10)}.json`, conversations);
+  toast("تم تصدير جميع المحادثات");
+}
+function exportOne() {
+  const conv = getActive(); if (!conv) return;
+  download(`${conv.title.replace(/[\\/:*?"<>|]/g, "_")}.json`, conv);
+  toast("تم تصدير المحادثة");
+}
+async function importFile(file) {
+  try {
+    const data = JSON.parse(await readAsText(file));
+    const list = Array.isArray(data) ? data : [data];
+    const valid = list.filter((c) => c && Array.isArray(c.messages));
+    if (!valid.length) return toast("الملف لا يحتوي على محادثات صالحة");
+    valid.forEach((c) => { c.id = uid(); c.createdAt = c.createdAt || Date.now(); c.updatedAt = c.updatedAt || Date.now(); });
+    conversations = [...valid, ...conversations];
+    activeId = valid[0].id;
+    saveAll(); renderAll();
+    toast(`تم استيراد ${valid.length} محادثة`);
+  } catch (e) { toast("تعذّر استيراد الملف: تأكد أنه JSON صالح"); }
+}
+
+/* ---------- أحداث الواجهة ---------- */
+function autoResize() {
+  const t = $("inputBox"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 180) + "px";
+}
+
+$("newChatBtn").addEventListener("click", () => createConversation(true));
+$("clearAllBtn").addEventListener("click", clearAllConversations);
+$("exportAllBtn").addEventListener("click", exportAll);
+$("exportOneBtn").addEventListener("click", exportOne);
+$("importBtn").addEventListener("click", () => $("importFile").click());
+$("importFile").addEventListener("change", (e) => { if (e.target.files[0]) importFile(e.target.files[0]); e.target.value = ""; });
+$("renameBtn").addEventListener("click", () => renameConversation(activeId));
+$("deleteOneBtn").addEventListener("click", () => deleteConversation(activeId));
+$("testBtn").addEventListener("click", testConnection);
+$("menuBtn").addEventListener("click", () => $("sidebar").classList.toggle("open"));
+$("sendBtn").addEventListener("click", sendMessage);
+$("stopBtn").addEventListener("click", () => abortCtrl && abortCtrl.abort());
+$("attachBtn").addEventListener("click", () => $("fileInput").click());
+$("fileInput").addEventListener("change", (e) => { handleFiles(e.target.files); e.target.value = ""; });
+$("searchInput").addEventListener("input", (e) => { searchQuery = e.target.value; renderSidebar(); });
+
+$("inputBox").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+$("inputBox").addEventListener("input", autoResize);
+$("inputBox").addEventListener("paste", (e) => {
+  const imgs = [...(e.clipboardData?.files || [])].filter((f) => f.type.startsWith("image/"));
+  if (imgs.length) { e.preventDefault(); handleFiles(imgs); }
+});
+$("messages").addEventListener("dragover", (e) => e.preventDefault());
+$("messages").addEventListener("drop", (e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); });
+
+$("convList").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-act]");
+  if (btn) {
+    e.stopPropagation();
+    if (btn.dataset.act === "rename") renameConversation(btn.dataset.id);
+    if (btn.dataset.act === "delete") deleteConversation(btn.dataset.id);
+    return;
+  }
+  const item = e.target.closest(".conv-item");
+  if (item) switchTo(item.dataset.id);
+});
+$("messages").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-act]");
+  if (!btn) return;
+  const conv = getActive(); if (!conv) return;
+  if (btn.dataset.act === "copy") {
+    const m = conv.messages.find((x) => x.id === btn.dataset.id);
+    if (m) { navigator.clipboard.writeText(m.content || ""); toast("تم النسخ"); }
+  }
+  if (btn.dataset.act === "delmsg") {
+    conv.messages = conv.messages.filter((x) => x.id !== btn.dataset.id);
+    conv.updatedAt = Date.now(); saveAll(); renderAll();
+  }
+});
+
+/* حفظ الإعدادات عند أي تعديل */
+let settingsTimer = null;
+function onSettingsInput() {
+  settings.endpoint = $("endpointInput").value;
+  settings.model = $("modelInput").value;
+  settings.apiKey = $("apiKeyInput").value;
+  clearTimeout(settingsTimer);
+  settingsTimer = setTimeout(() => {
+    saveSettings();
+    const s = $("testStatus");
+    if (s.classList.contains("ok")) { s.className = "test-status"; s.textContent = "تم تعديل الإعدادات — لم يتم اختبار الاتصال بعد"; }
+    setSaveStatus("✓ تم حفظ الإعدادات");
+  }, 400);
+}
+["endpointInput", "modelInput", "apiKeyInput"].forEach((id) => $(id).addEventListener("input", onSettingsInput));
+
+/* حفظ أخير عند إغلاق/تحديث الصفحة */
+window.addEventListener("beforeunload", () => { try { localStorage.setItem(LS_CONVS, JSON.stringify(conversations)); } catch (e) {} });
+
+/* ---------- بدء التشغيل: استعادة كل شيء ---------- */
+loadAll();
+saveSettings();   // ضمان وجود الإعدادات في التخزين من أول تشغيل
+$("endpointInput").value = settings.endpoint || "";
+$("modelInput").value = settings.model || DEFAULT_MODEL;
+$("apiKeyInput").value = settings.apiKey || "";
+renderAll();
+updateStorageInfo();
+setSaveStatus(conversations.length > 1 ? `✓ تمت استعادة ${conversations.length} محادثات محفوظة` : "✓ تم الحفظ");
+</script>
+</body>
+</html>
